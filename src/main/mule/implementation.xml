@@ -1,26 +1,53 @@
 <mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:google-sheets="http://www.mulesoft.org/schema/mule/google-sheets" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd     http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd  http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd  http://www.mulesoft.org/schema/mule/google-sheets http://www.mulesoft.org/schema/mule/google-sheets/current/mule-google-sheets.xsd  http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
-    <google-sheets:config name="Google-Sheet-Mule-Connector-Config">
-        <google-sheets:oauth-2-0-connection>
-            <google-sheets:oauth-authorization-code consumerKey="${secure::google.spread-sheets.client_id}" consumerSecret="${secure::google.spread-sheets.client_secret}" scopes="${secure::google.spread-sheets.scope}"></google-sheets:oauth-authorization-code>
-            <google-sheets:oauth-callback-config authorizePath="${secure::google.oauth-callback.authorize-path}" callbackPath="${secure::google.oauth-callback.callback-path}" externalCallbackUrl="${secure::google.oauth-callback.external-callback-url}" listenerConfig="HTTP-Listener-config"></google-sheets:oauth-callback-config>
-        </google-sheets:oauth-2-0-connection>
-    </google-sheets:config>
-    <os:config name="OS-Config">
-        <os:connection></os:connection>
-    </os:config>
-    <http:request-config name="Google-Sheet-Request-API">
-        <http:request-connection host="sheets.googleapis.com/v4/spreadsheets/" port="0" protocol="HTTPS"></http:request-connection>
-    </http:request-config>
-    <os:object-store name="Object-store" config-ref="OS-Config" maxEntries="1"></os:object-store>
-    <flow name="get-sheet-values">
-        <http:listener config-ref="HTTP-Listener-config" doc:id="crbcqz" doc:name="Listener" path="/get-sheets"></http:listener>
-        <logger doc:id="zgirjb" doc:name="Start Get Sheets Values Flow" message="Invoking Get Sheet Values Flow"></logger>
-        <ee:transform doc:id="zyvtgm" doc:name="Transform">
+    <flow name="get-sheet-values-by-range">
+        <http:listener config-ref="HTTP-Listener-config" doc:id="crbcqz" doc:name="Listener" path="/get-sheet-values-by-range"></http:listener>
+        <logger doc:id="zgirjb" doc:name="Start Get Sheets Values Flow" message="Invoking Get Sheet Range Values Flow"></logger>
+        <set-variable doc:id="kmtgmf" doc:name="Set Sheet Id Variable" value="#[attributes.queryParams['sheetId']]" variableName="vSheetId"></set-variable>
+        <set-variable doc:id="vsxmuo" doc:name="Set Sheet Range variable" value="#[attributes.queryParams['range']]" variableName="vSheetRange"></set-variable>
+        <google-sheets:get-spreadsheets-values-by-spreadsheet-id-range config-ref="Google-Sheet-Mule-Connector-Config" doc:id="jvzdls" doc:name="Get Spreadsheets Values" range="#[vars.vSheetRange]" spreadsheetId="#[vars.vSheetId]"></google-sheets:get-spreadsheets-values-by-spreadsheet-id-range>
+        <logger doc:id="ffloio" doc:name="Exit Get Sheet Logger" message="Exiting Get Sheet Range Values Logger"></logger>
+    </flow>
+    <flow name="get-access-token">
+        <http:listener config-ref="HTTP-Listener-config" doc:name="Listener" path="/get-access-token"></http:listener>
+        <!-- Retrieve the OAuth context object using the exact key Mule uses -->
+        <os:retrieve doc:name="Retrieve OAuth Context" key="default-Google-Sheet-Mule-Connector-Config" objectStore="Object-store">
+            <os:default-value><![CDATA[#[null]]]></os:default-value>
+        </os:retrieve>
+        <!-- DataWeave accesses Java bean getters as properties: getAccessToken() -> accessToken -->
+        <set-variable doc:name="Set Access Token" value="#[(payload.accessToken default '') as String]" variableName="vAccessToken"></set-variable>
+        <set-variable doc:name="Set Refresh Token" value="#[(payload.refreshToken default '') as String]" variableName="vRefreshToken"></set-variable>
+        <logger doc:name="Log Token" level="INFO" message="#['Access Token: ' ++ vars['vAccessToken'] ++ ' | Refresh Token: ' ++ vars['vRefreshToken']]"></logger>
+        <ee:transform doc:name="Build Response">
             <ee:message>
-                <ee:set-payload doc:id="sdqrte" doc:name="Set payload" resource="dataweave\health-status.dwl.txt"></ee:set-payload>
+                <ee:set-payload resource="dataweave\retrieve-access-token.dwl"></ee:set-payload>
             </ee:message>
         </ee:transform>
-        <google-sheets:get-spreadsheets-values-by-spreadsheet-id-range config-ref="Google-Sheet-Mule-Connector-Config" doc:id="jvzdls" doc:name="Get Spreadsheets Values" range="A1:D11" spreadsheetId="1h5CbgL4dQIhEkVLCfFh9P1WsPm8ZPRE_XJsZBQFkqoQ"></google-sheets:get-spreadsheets-values-by-spreadsheet-id-range>
-        <logger doc:id="ffloio" doc:name="Exit Get Sheet Logger" message="Exiting Get Sheet Values Logger"></logger>
     </flow>
+    <flow name="health-status-sub-flow">
+        <http:listener config-ref="HTTP-Listener-config" doc:id="blvbym" doc:name="Listener" path="/health"></http:listener>
+        <logger doc:id="qzvyrw" doc:name="Start Health Status Logger" message="Health Status Sub Flow Initiated"></logger>
+        <ee:transform doc:id="oolixb" doc:name="Transform">
+            <ee:message>
+                <ee:set-payload doc:id="loznlv" doc:name="Set payload" resource="dataweave\health-status.dwl.txt"></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger doc:id="upuisg" doc:name="End Health Status Logger" message="Health Status Sub Flow Finished"></logger>
+    </flow>
+    <flow name="get-sheet-values-by-tab">
+        <http:listener doc:name="Listener" doc:id="neqpio" path="get-sheet-values-by-tab" config-ref="HTTP-Listener-config"/>
+        <logger doc:name="Start Get Sheet Values by Tab Flow Logger" doc:id="upqcsf" message="Get Sheet Values by Tab Flow Started"/>
+        <set-variable doc:name="Set Tab Name variable" doc:id="gxtidx" variableName="vTabName" value="#[payload.TabName]"/>
+        <os:contains doc:name="OS Contains Access Token" doc:id="tdomhp" key="default-Google-Sheet-Mule-Connector-Config" objectStore="Object-store" target="IsTokenStored"/>
+        <choice doc:name="Choice" doc:id="frzjtw">
+            
+        <when doc:name="When" expression="#[vars.IsTokenStored]">
+                <logger doc:name="Logger" doc:id="aeitbo"/></when>
+            <otherwise>
+                <ee:transform doc:name="Transform" doc:id="dyicbs" >
+                    <ee:message >
+                        <ee:set-payload doc:name="Set payload" doc:id="aqhzom" resource="dataweave\oAuth-dance-is-required-message.dwl"/>
+                    </ee:message>
+                </ee:transform>
+            </otherwise></choice>
+    <logger doc:name="Finish Get Sheet Values by Tab Flow Logger" doc:id="nlcltr" message="Get Sheet Values by Tab Flow Finished"/></flow>
 </mule>

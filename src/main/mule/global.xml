@@ -1,15 +1,29 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core"
-      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-      xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xsi:schemaLocation="
-        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-        http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
-
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:google-sheets="http://www.mulesoft.org/schema/mule/google-sheets" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="         http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd         http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd         http://www.mulesoft.org/schema/mule/google-sheets http://www.mulesoft.org/schema/mule/google-sheets/current/mule-google-sheets.xsd         http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd         http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
     <!-- Secure Properties configuration -->
-    <secure-properties:config name="Secure-Properties-Config" doc:name="Secure Properties Config" file="config/ws/ws-config.yaml" key="${secure.key}">
-        <secure-properties:encrypt algorithm="AES" mode="CBC"/>
+    <secure-properties:config doc:name="Secure Properties Config" file="config/ws/ws-config.yaml" key="${secure.key}" name="Secure-Properties-Config">
+        <secure-properties:encrypt algorithm="AES" mode="CBC"></secure-properties:encrypt>
     </secure-properties:config>
 
+    
+    <!-- Google Sheets connector configuration -->
+    <google-sheets:config name="Google-Sheet-Mule-Connector-Config">
+        <google-sheets:oauth-2-0-connection>
+            <google-sheets:oauth-authorization-code consumerKey="${secure::google.spread-sheets.client_id}" consumerSecret="${secure::google.spread-sheets.client_secret}" scopes="${secure::google.spread-sheets.scope}"></google-sheets:oauth-authorization-code>
+            <google-sheets:oauth-callback-config authorizePath="${secure::google.oauth-callback.authorize-path}" callbackPath="${secure::google.oauth-callback.callback-path}" externalCallbackUrl="${secure::google.oauth-callback.external-callback-url}" listenerConfig="HTTP-Listener-config"></google-sheets:oauth-callback-config>
+            <google-sheets:oauth-store-config objectStore="Object-store"></google-sheets:oauth-store-config>
+        </google-sheets:oauth-2-0-connection>
+    </google-sheets:config>
+
+
+    <!-- Object Store configuration -->
+    <os:config name="OS-Config">
+        <os:connection></os:connection>
+    </os:config>
+    <os:object-store config-ref="OS-Config" maxEntries="1" name="Object-store"></os:object-store>
+
+
+    <!-- HTTP Request configuration for Google Sheets API -->
+    <http:request-config name="Google-Sheet-Request-API">
+        <http:request-connection host="sheets.googleapis.com/v4/spreadsheets/" port="0" protocol="HTTPS"></http:request-connection>
+    </http:request-config>
 </mule>
