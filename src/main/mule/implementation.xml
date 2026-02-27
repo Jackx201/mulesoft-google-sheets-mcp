@@ -9,19 +9,33 @@
     </flow>
     <flow name="get-access-token">
         <http:listener config-ref="HTTP-Listener-config" doc:name="Listener" path="/get-access-token"></http:listener>
-        <!-- Retrieve the OAuth context object using the exact key Mule uses -->
+        <logger doc:name="Start Get Token From OS Logger" doc:id="rjaomj" message="Checking if Token is Stored"/>
+    <os:contains doc:name="OS Contains Access Token" doc:id="zlxwno" key="default-Google-Sheet-Mule-Connector-Config" objectStore="Object-store" target="IsTokenStored"/>
+    <choice doc:name="Choice" doc:id="jjmkfz">
+            
+            <when doc:name="When Token is Stored" expression="#[vars.IsTokenStored]">
+                    <logger doc:name="Logger" doc:id="jzvvvg"/>
         <os:retrieve doc:name="Retrieve OAuth Context" key="default-Google-Sheet-Mule-Connector-Config" objectStore="Object-store">
-            <os:default-value><![CDATA[#[null]]]></os:default-value>
-        </os:retrieve>
-        <!-- DataWeave accesses Java bean getters as properties: getAccessToken() -> accessToken -->
+                    <os:default-value><![CDATA[#[null]]]></os:default-value>
+                </os:retrieve>
         <set-variable doc:name="Set Access Token" value="#[(payload.accessToken default '') as String]" variableName="vAccessToken"></set-variable>
         <set-variable doc:name="Set Refresh Token" value="#[(payload.refreshToken default '') as String]" variableName="vRefreshToken"></set-variable>
         <logger doc:name="Log Token" level="INFO" message="#['Access Token: ' ++ vars['vAccessToken'] ++ ' | Refresh Token: ' ++ vars['vRefreshToken']]"></logger>
         <ee:transform doc:name="Build Response">
-            <ee:message>
-                <ee:set-payload resource="dataweave\retrieve-access-token.dwl"></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+                    <ee:message>
+                        <ee:set-payload resource="dataweave\retrieve-access-token.dwl"></ee:set-payload>
+                    </ee:message>
+                </ee:transform></when>
+                <otherwise>
+                    <ee:transform doc:name="Transform" doc:id="akdmfq" >
+                        <ee:message >
+                            <ee:set-payload doc:name="Set payload" doc:id="hkryva" resource="dataweave\oAuth-dance-is-required-message.dwl"/>
+                        </ee:message>
+                    </ee:transform>
+                </otherwise></choice>
+        <!-- Retrieve the OAuth context object using the exact key Mule uses -->
+        <!-- DataWeave accesses Java bean getters as properties: getAccessToken() -> accessToken -->
+    <logger doc:name="Exit Get Token From OS Logger" doc:id="ppryhx" message="Checked if Token is Stored"/>
     </flow>
     <flow name="health-status-sub-flow">
         <http:listener config-ref="HTTP-Listener-config" doc:id="blvbym" doc:name="Listener" path="/health"></http:listener>
@@ -37,17 +51,6 @@
         <http:listener doc:name="Listener" doc:id="neqpio" path="get-sheet-values-by-tab" config-ref="HTTP-Listener-config"/>
         <logger doc:name="Start Get Sheet Values by Tab Flow Logger" doc:id="upqcsf" message="Get Sheet Values by Tab Flow Started"/>
         <set-variable doc:name="Set Tab Name variable" doc:id="gxtidx" variableName="vTabName" value="#[payload.TabName]"/>
-        <os:contains doc:name="OS Contains Access Token" doc:id="tdomhp" key="default-Google-Sheet-Mule-Connector-Config" objectStore="Object-store" target="IsTokenStored"/>
-        <choice doc:name="Choice" doc:id="frzjtw">
-            
-        <when doc:name="When" expression="#[vars.IsTokenStored]">
-                <logger doc:name="Logger" doc:id="aeitbo"/></when>
-            <otherwise>
-                <ee:transform doc:name="Transform" doc:id="dyicbs" >
-                    <ee:message >
-                        <ee:set-payload doc:name="Set payload" doc:id="aqhzom" resource="dataweave\oAuth-dance-is-required-message.dwl"/>
-                    </ee:message>
-                </ee:transform>
-            </otherwise></choice>
+        <flow-ref doc:name="Get Access Token Flow Reference" name="get-access-token" target="vAccessToken"/>
     <logger doc:name="Finish Get Sheet Values by Tab Flow Logger" doc:id="nlcltr" message="Get Sheet Values by Tab Flow Finished"/></flow>
 </mule>

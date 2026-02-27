@@ -50,3 +50,8 @@ velocity.log
 # ACB defaults #
 # ------------------------------------------------------------------------------ #
 .tooling-project
+
+# ---------------------------------- #
+# DataWeave embedded playground data #
+# ---------------------------------- #
+src/test/resources/embedded-*/
