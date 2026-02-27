@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"mulesoft-local-mcp": {
+			"url": "http://localhost:8080/mcp",
+			"type": "http"
+		}
+	},
+	"inputs": []
+}

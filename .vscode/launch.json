@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "mule-xml-debugger",
+        "request": "launch",
+        "name": "Run Mule Application",
+        "noDebug": true,
+        "mule.project": "${workspaceFolder}",
+        "mule.runtime.args": "${config:mule.runtime.defaultArguments}"
+      },
+      {
+        "type": "mule-xml-debugger",
+        "request": "launch",
+        "name": "Debug Mule Application",
+        "mule.project": "${workspaceFolder}",
+        "mule.runtime.args": "${config:mule.runtime.defaultArguments}"
+      }
+    ]
+  }

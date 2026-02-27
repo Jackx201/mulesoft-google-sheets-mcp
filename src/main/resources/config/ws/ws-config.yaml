@@ -1,0 +1,18 @@
+# *****************************************************************************************************************************
+# ** WARNING: Once you configure this file with your credentials, DO NOT COMMIT THIS FILE TO YOUR REPOSITORY.                 *
+# ** This file is meant to be used as a template for your own configuration, and should not be shared publicly.               *
+# ** If you need to share your configuration with others, please create a separate file with the actual credentials           *
+# ** and add it to your .gitignore file.                                                                                      *
+# *****************************************************************************************************************************
+
+google:
+  spread-sheets:
+    auth_url: "https://accounts.google.com/o/oauth2/auth"
+    scope: "https://www.googleapis.com/auth/spreadsheets"
+    access_token_url: "https://oauth2.googleapis.com/token"
+    client_id: "![2NvSTLdWLE0KIDV54pXhyQAjucVxeu76EJjXQScj/ztE7syIJb6R+IpY8Ap4EQeYjT6fxw/LQrcok/5jComRHtqeTaTGOE429gUC1PyVR2A=]" # Replace with your actual client ID obtained from Google Cloud Console
+    client_secret: "![HsUpN7bi30+AyKB+toBugQBpTc/kugo5Piou0PtEgK9uDW875ngRESyF2Wp9HFtO]" # Replace with your actual client secret obtained from Google Cloud Console
+  oauth-callback:
+    callback-path: "/callback"
+    authorize-path: "/google/auth"
+    external-callback-url: "http://localhost:8080/callback"

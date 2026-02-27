@@ -1,0 +1,26 @@
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:google-sheets="http://www.mulesoft.org/schema/mule/google-sheets" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd     http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd  http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd  http://www.mulesoft.org/schema/mule/google-sheets http://www.mulesoft.org/schema/mule/google-sheets/current/mule-google-sheets.xsd  http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+    <google-sheets:config name="Google-Sheet-Mule-Connector-Config">
+        <google-sheets:oauth-2-0-connection>
+            <google-sheets:oauth-authorization-code consumerKey="${secure::google.spread-sheets.client_id}" consumerSecret="${secure::google.spread-sheets.client_secret}" scopes="${secure::google.spread-sheets.scope}"></google-sheets:oauth-authorization-code>
+            <google-sheets:oauth-callback-config authorizePath="${secure::google.oauth-callback.authorize-path}" callbackPath="${secure::google.oauth-callback.callback-path}" externalCallbackUrl="${secure::google.oauth-callback.external-callback-url}" listenerConfig="HTTP-Listener-config"></google-sheets:oauth-callback-config>
+        </google-sheets:oauth-2-0-connection>
+    </google-sheets:config>
+    <os:config name="OS-Config">
+        <os:connection></os:connection>
+    </os:config>
+    <http:request-config name="Google-Sheet-Request-API">
+        <http:request-connection host="sheets.googleapis.com/v4/spreadsheets/" port="0" protocol="HTTPS"></http:request-connection>
+    </http:request-config>
+    <os:object-store name="Object-store" config-ref="OS-Config" maxEntries="1"></os:object-store>
+    <flow name="get-sheet-values">
+        <http:listener config-ref="HTTP-Listener-config" doc:id="crbcqz" doc:name="Listener" path="/get-sheets"></http:listener>
+        <logger doc:id="zgirjb" doc:name="Start Get Sheets Values Flow" message="Invoking Get Sheet Values Flow"></logger>
+        <ee:transform doc:id="zyvtgm" doc:name="Transform">
+            <ee:message>
+                <ee:set-payload doc:id="sdqrte" doc:name="Set payload" resource="dataweave\health-status.dwl.txt"></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <google-sheets:get-spreadsheets-values-by-spreadsheet-id-range config-ref="Google-Sheet-Mule-Connector-Config" doc:id="jvzdls" doc:name="Get Spreadsheets Values" range="A1:D11" spreadsheetId="1h5CbgL4dQIhEkVLCfFh9P1WsPm8ZPRE_XJsZBQFkqoQ"></google-sheets:get-spreadsheets-values-by-spreadsheet-id-range>
+        <logger doc:id="ffloio" doc:name="Exit Get Sheet Logger" message="Exiting Get Sheet Values Logger"></logger>
+    </flow>
+</mule>

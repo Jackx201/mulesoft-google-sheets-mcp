@@ -1,0 +1,6 @@
+%dw 2.0
+output application/json
+---
+{
+   "Message": "API is Up and Running"
+}
