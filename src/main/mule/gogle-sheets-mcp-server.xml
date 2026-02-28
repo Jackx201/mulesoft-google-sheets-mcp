@@ -1,24 +1,5 @@
 <mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mcp="http://www.mulesoft.org/schema/mule/mcp" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd       http://www.mulesoft.org/schema/mule/mcp http://www.mulesoft.org/schema/mule/mcp/current/mule-mcp.xsd       http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd       http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd  http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
-    <!-- HTTP Listener configuration to receive MCP connections -->
-    <http:listener-config basePath="/api" name="HTTP-Listener-config">
-        <http:listener-connection host="localhost" port="8080"></http:listener-connection>
-    </http:listener-config>
-    <!-- MCP Server configuration -->
-    <mcp:server-config name="Server" serverName="mule-mcp-server" serverVersion="1.0.0">
-        <mcp:streamable-http-server-connection listenerConfig="HTTP-Listener-config"></mcp:streamable-http-server-connection>
-    </mcp:server-config>
-    <!-- HTTP Request configuration to connect to JSONPlaceholder API -->
-    <http:request-config doc:name="HTTP Request configuration" name="JSONPlaceholder-Config">
-        <http:request-connection host="jsonplaceholder.typicode.com" port="443" protocol="HTTPS">
-            <tls:context>
-                <tls:trust-store insecure="true"></tls:trust-store>
-            </tls:context>
-        </http:request-connection>
-    </http:request-config>
-    <!--
-        TOOL 1: get-all-posts
-        Retrieves all posts from JSONPlaceholder
-    -->
+
     <flow name="get-sheet-values-by-tab-name">
         <mcp:tool-listener config-ref="Server" doc:name="get-sheet-values-by-tab-name" name="get-sheet-values-by-tab-name">
             <mcp:description><![CDATA[Retrieves all values from a Google Spreadsheet given a tab name. Tab name and Spreadsheet ID are required.]]></mcp:description>
@@ -50,13 +31,10 @@
     <logger doc:name="Enter MCP Tool Logger" doc:id="vxfqkf" message="Entered MCP Tool Get Google Sheet Value By Tab Name"/>
         <flow-ref doc:name="Get Sheet Values By Tab Flow-ref" name="get-sheet-values-by-tab"/>
     <logger doc:name="Exit MCP Tool Logger" doc:id="qrqdoq" message="Exit MCP Tool Get Google Sheet Value By Tab Name"/>
-        <!-- HTTP call to external API -->
-        <!-- Response transformation -->
     </flow>
-    <!--
-        TOOL 2: get-post-by-id
-        Retrieves a single post by its ID
-    -->
+
+
+
     <flow name="get-sheet-values-by-range-flow">
         <mcp:tool-listener config-ref="Server" doc:name="get-sheet-values-by-range" name="get-sheet-values-by-range">
             <mcp:description><![CDATA[Retrieves a Google sheet values within a given range for limiting to only certain information.]]></mcp:description>
@@ -86,16 +64,13 @@
             </mcp:responses>
         </mcp:tool-listener>
     <logger doc:name="Enter MCP Tool Logger" doc:id="ogopsq" message="Entered MCP Tool Get Google Sheet Value By Range"/>
-        <!-- Extract postId from payload -->
         <flow-ref doc:name="Get Sheet Values by Range Flow-ref" name="get-sheet-values-by-range"/>
         <logger doc:name="Exit MCP Tool Logger" doc:id="yagjds" message="Exit MCP Tool Get Google Sheet Value By Range"/>
-        <!-- HTTP call using the post ID -->
-        <!-- Response transformation -->
+
     </flow>
-    <!--
-        TOOL 3: get-users
-        Retrieves all users
-    -->
+
+
+
     <flow name="create-new-spreadsheet">
         <mcp:tool-listener config-ref="Server" doc:name="create-new-spreadsheet" name="create-new-spreadsheet">
             <mcp:description><![CDATA[Creates a new Google Spreadsheet. The name of the new Spreadsheet is required. Additionally you can provide a set of names for the Tabs to be generated as well.]]></mcp:description>
@@ -127,12 +102,10 @@
     <logger doc:name="Enter MCP Tool Logger" doc:id="sgcmqo" message="Entered MCP Tool Create new Google Spreadsheet"/>
         <flow-ref doc:name="Flow-ref" name="create-new-spreadsheet-implementation-flow"/>
     <logger doc:name="Enter MCP Tool Logger" doc:id="djdjjw" message="Finished Execution of MCP Tool Create new Google Spreadsheet"/>
-        <!-- HTTP call to the API -->
     </flow>
-    <!--
-        TOOL 4: get-user-posts
-        Retrieves all posts for a specific user
-    -->
+
+
+
     <flow name="append-sheet-values">
         <mcp:tool-listener config-ref="Server" doc:name="append-sheet-values" name="append-sheet-values">
             <mcp:description><![CDATA[Appends new data in a Spreadsheet given a Range in the spreadsheet. a Spreadsheet ID, the range where data must be inserted and the actual data to be inserted is required.]]></mcp:description>
@@ -169,7 +142,5 @@
     <logger doc:name="Enter MCP Tool Logger" doc:id="kebrri" message="Entered MCP Tool Append Google Sheet Value"/>
         <flow-ref doc:name="Append Sheet Values Implementation Flow-ref" name="append-values-to-sheet"/>
     <logger doc:name="Exit MCP Tool Logger" doc:id="nrbuga" message="Exit MCP Tool Append Google Sheet Value"/>
-        <!-- Extract userId from payload -->
-        <!-- HTTP call with query parameter -->
     </flow>
 </mule>
