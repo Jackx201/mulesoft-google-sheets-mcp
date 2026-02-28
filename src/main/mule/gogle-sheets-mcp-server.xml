@@ -85,7 +85,10 @@
 
          "sheets":{
             "type": "array",
-            "description": "Array of strings with the names of the tabs to be created. If no items are provided, by default will create only one tab named as 'Sheet 1' "      
+            "description": "Array of strings with the names of the tabs to be created. If no items are provided, by default will create only one tab named Sheet1.",
+            "items": {
+                "type": "string"
+            }
        }
 
     },
@@ -125,7 +128,13 @@
 
          "values":{
             "type": "array",
-            "description": "Set of arrays with data to be inserted."      
+            "description": "Set of arrays with data to be inserted.",
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            }
        }
 
     },
