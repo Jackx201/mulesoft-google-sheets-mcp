@@ -119,21 +119,30 @@
         TOOL 4: get-user-posts
         Retrieves all posts for a specific user
     -->
-    <flow name="get-user-posts-flow">
-        <mcp:tool-listener config-ref="Server" doc:name="get-user-posts" name="get-user-posts">
-            <mcp:description><![CDATA[Retrieves all posts written by a specific user. Requires parameter 'userId' (integer 1-10).]]></mcp:description>
-            <mcp:parameters-schema><![CDATA[{
+    <flow name="append-sheet-values">
+        <mcp:tool-listener config-ref="Server" doc:name="append-sheet-values" name="append-sheet-values">
+            <mcp:description><![CDATA[Appends new data in a Spreadsheet given a Range in the spreadsheet. a Spreadsheet ID, the range where data must be inserted and the actual data to be inserted is required.]]></mcp:description>
+        <mcp:parameters-schema><![CDATA[{
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
-        "userId": {
-            "type": "integer",
-            "description": "User ID to be retrieved (1-10)",
-            "minimum": 1,
-            "maximum": 10
-        }
+        "sheetId": {
+            "type": "string",
+            "description": "ID of the sheet to be retrieved. Can be found in sheet URL"
+        },
+
+        "range": {
+            "type": "string",
+            "description": "Range of cells to be selected and retrieved."
+        },
+
+         "values":{
+            "type": "array",
+            "description": "Set of arrays with data to be inserted."      
+       }
+
     },
-    "required": ["userId"]
+    "required": ["sheetId", "range"]
 }]]></mcp:parameters-schema>
             <mcp:responses>
                 <mcp:text-tool-response-content text="#[payload.^raw]" priority="1">
@@ -143,15 +152,10 @@
                 </mcp:text-tool-response-content>
             </mcp:responses>
         </mcp:tool-listener>
+    <logger doc:name="Enter MCP Tool Logger" doc:id="kebrri" message="Entered MCP Tool Append Google Sheet Value"/>
+        <flow-ref doc:name="Append Sheet Values Implementation Flow-ref" name="append-values-to-sheet"/>
+    <logger doc:name="Exit MCP Tool Logger" doc:id="nrbuga" message="Exit MCP Tool Append Google Sheet Value"/>
         <!-- Extract userId from payload -->
-        <set-variable doc:name="Set userId variable" value="#[payload.userId]" variableName="userId"></set-variable>
         <!-- HTTP call with query parameter -->
-        <http:request config-ref="JSONPlaceholder-Config" doc:name="GET user posts" method="GET" path="/posts">
-            <http:query-params><![CDATA[#[output application/java
----
-{
-	"userId" : vars.userId
-}]]]></http:query-params>
-        </http:request>
     </flow>
 </mule>
