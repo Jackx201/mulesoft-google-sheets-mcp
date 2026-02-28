@@ -58,36 +58,34 @@
         <logger doc:id="nlcltr" doc:name="Finish Get Sheet Values by Tab Flow Logger" message="Get Sheet Values by Tab Flow Finished"></logger>
     </flow>
     <flow name="append-values-to-sheet">
-        <http:listener doc:name="Listener" doc:id="tdgzbf" path="/append-values" config-ref="HTTP-Listener-config"/>
-        <logger doc:name="Start Append Values Flow Logger" doc:id="jmkmpo" message="Append Values Flow Started"/>
-        <set-variable doc:name="Set values variable" doc:id="iehhvb" variableName="vSheetValuesToAppend" value="#[payload.values]"/>
+        <http:listener config-ref="HTTP-Listener-config" doc:id="tdgzbf" doc:name="Listener" path="/append-values"></http:listener>
+        <logger doc:id="jmkmpo" doc:name="Start Append Values Flow Logger" message="Append Values Flow Started"></logger>
+        <set-variable doc:id="iehhvb" doc:name="Set values variable" value="#[payload.values]" variableName="vSheetValuesToAppend"></set-variable>
         <set-variable doc:id="lgeyqp" doc:name="Set Sheet Id Variable" value="#[payload.sheetId]" variableName="vSheetId"></set-variable>
         <set-variable doc:id="qdvpkh" doc:name="Set Sheet Range variable" value="#[payload.range]" variableName="vSheetRange"></set-variable>
         <!-- Get access token from Object Store -->
-        <flow-ref doc:name="Get Access Token Flow Reference" name="get-access-token" target="vAccessToken" targetValue="#[payload.access_token]"/>
+        <flow-ref doc:name="Get Access Token Flow Reference" name="get-access-token" target="vAccessToken" targetValue="#[payload.access_token]"></flow-ref>
         <!-- Build ValueRange body -->
-        <set-payload doc:name="Set ValueRange payload" doc:id="wdnxfb" value="#[%dw 2.0
+        <set-payload doc:id="wdnxfb" doc:name="Set ValueRange payload" value="#[%dw 2.0
 output application/json
 ---
 {
     range: vars.vSheetRange,
     majorDimension: 'ROWS',
     values: vars.vSheetValuesToAppend
-}]"/>
+}]"></set-payload>
         <!-- Direct HTTP POST to Google Sheets API -->
-        <http:request config-ref="Google-Sheet-Request-API" doc:id="gvappn" doc:name="Append Values HTTP Request" method="POST"
-            url="#['https://sheets.googleapis.com/v4/spreadsheets/' ++ vars.vSheetId ++ '/values/' ++ vars.vSheetRange ++ ':append?valueInputOption=USER_ENTERED&amp;insertDataOption=INSERT_ROWS&amp;access_token=' ++ vars.vAccessToken]">
+        <http:request config-ref="Google-Sheet-Request-API" doc:id="gvappn" doc:name="Append Values HTTP Request" method="POST" url="#['https://sheets.googleapis.com/v4/spreadsheets/' ++ vars.vSheetId ++ '/values/' ++ vars.vSheetRange ++ ':append?valueInputOption=USER_ENTERED&amp;insertDataOption=INSERT_ROWS&amp;access_token=' ++ vars.vAccessToken]">
             <http:headers><![CDATA[#[{"Content-Type": "application/json"}]]]></http:headers>
         </http:request>
-        <logger doc:name="Append Values Flow Finished Logger" doc:id="dbwobj" message="Append Values Flow Finished"/>
+        <logger doc:id="dbwobj" doc:name="Append Values Flow Finished Logger" message="Append Values Flow Finished"></logger>
         <error-handler>
             <on-error-continue type="ANY">
-                <logger level="ERROR" doc:name="Log Full Error"
-                    message="#['ERROR TYPE: ' ++ error.errorType.identifier
+                <logger doc:name="Log Full Error" level="ERROR" message="#['ERROR TYPE: ' ++ error.errorType.identifier
                         ++ ' | DESCRIPTION: ' ++ error.description
                         ++ ' | CAUSE: ' ++ (error.cause.message default 'no cause')
-                        ++ ' | PAYLOAD: ' ++ (write(error.errorMessage.payload, 'application/json') default 'no payload')]"/>
-                <set-payload value="#[%dw 2.0
+                        ++ ' | PAYLOAD: ' ++ (write(error.errorMessage.payload, 'application/json') default 'no payload')]"></logger>
+                <set-payload doc:name="Set Error Response" value="#[%dw 2.0
 output application/json
 ---
 {
@@ -95,7 +93,51 @@ output application/json
     description: error.description,
     cause: error.cause.message default 'no cause',
     payload: error.errorMessage.payload
-}]" doc:name="Set Error Response"/>
+}]"></set-payload>
+            </on-error-continue>
+        </error-handler>
+    </flow>
+    <flow name="create-new-spreadsheet-implementation-flow">
+        <http:listener doc:name="Listener" doc:id="llyzub" path="/create-new-spreadsheet" config-ref="HTTP-Listener-config" allowedMethods="POST"/>
+        <logger doc:name="Start Create New Spreadsheet Logger" doc:id="dxrptk" message="Starting Create New Spreadsheet Flow"/>
+        <!-- Set spreadsheet title and optional initial sheets from request body -->
+        <set-variable doc:name="Set Spreadsheet Title" variableName="vSpreadsheetTitle" value="#[payload.title]"/>
+        <set-variable doc:name="Set Sheets variable" variableName="vSheets" value="#[payload.sheets default ['Sheet1']]"/>
+        <!-- Get access token -->
+        <flow-ref doc:name="Get Access Token Flow Reference" name="get-access-token" target="vAccessToken" targetValue="#[payload.access_token]"/>
+        <!-- Build Spreadsheet body -->
+        <set-payload doc:name="Set Spreadsheet Body" value="#[%dw 2.0
+output application/json
+---
+{
+    properties: {
+        title: vars.vSpreadsheetTitle
+    },
+    sheets: vars.vSheets map (sheetName) -> {
+        properties: {
+            title: sheetName
+        }
+    }
+}]"/>
+        <!-- POST to Google Sheets API -->
+        <http:request config-ref="Google-Sheet-Request-API" doc:name="Create Spreadsheet HTTP Request" method="POST"
+            url="#['https://sheets.googleapis.com/v4/spreadsheets?access_token=' ++ vars.vAccessToken]">
+            <http:headers><![CDATA[#[{"Content-Type": "application/json"}]]]></http:headers>
+        </http:request>
+        <logger doc:name="End Create New Spreadsheet Logger" message="Spreadsheet Created Successfully"/>
+        <error-handler>
+            <on-error-continue type="ANY">
+                <logger level="ERROR" doc:name="Log Full Error"
+                    message="#['ERROR: ' ++ error.errorType.identifier ++ ' | ' ++ error.description]"/>
+                <set-payload doc:name="Set Error Response" value="#[%dw 2.0
+output application/json
+---
+{
+    errorType: error.errorType.identifier,
+    description: error.description,
+    cause: error.cause.message default 'no cause',
+    payload: error.errorMessage.payload
+}]"/>
             </on-error-continue>
         </error-handler>
     </flow>

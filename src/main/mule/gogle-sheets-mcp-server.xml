@@ -96,13 +96,25 @@
         TOOL 3: get-users
         Retrieves all users
     -->
-    <flow name="get-users-flow">
-        <mcp:tool-listener config-ref="Server" doc:name="get-users" name="get-users">
-            <mcp:description><![CDATA[Retrieves the list of all users from the JSONPlaceholder API. No parameters required.]]></mcp:description>
+    <flow name="create-new-spreadsheet">
+        <mcp:tool-listener config-ref="Server" doc:name="create-new-spreadsheet" name="create-new-spreadsheet">
+            <mcp:description><![CDATA[Creates a new Google Spreadsheet. The name of the new Spreadsheet is required. Additionally you can provide a set of names for the Tabs to be generated as well.]]></mcp:description>
             <mcp:parameters-schema><![CDATA[{
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "properties": {}
+    "properties": {
+        "title": {
+            "type": "string",
+            "description": "Name of the new Spreadsheet to be created"
+        },
+
+         "sheets":{
+            "type": "array",
+            "description": "Array of strings with the names of the tabs to be created. If no items are provided, by default will create only one tab named as 'Sheet 1' "      
+       }
+
+    },
+    "required": ["title"]
 }]]></mcp:parameters-schema>
             <mcp:responses>
                 <mcp:text-tool-response-content text="#[payload.^raw]" priority="1">
@@ -112,8 +124,10 @@
                 </mcp:text-tool-response-content>
             </mcp:responses>
         </mcp:tool-listener>
+    <logger doc:name="Enter MCP Tool Logger" doc:id="sgcmqo" message="Entered MCP Tool Create new Google Spreadsheet"/>
+        <flow-ref doc:name="Flow-ref" name="create-new-spreadsheet-implementation-flow"/>
+    <logger doc:name="Enter MCP Tool Logger" doc:id="djdjjw" message="Finished Execution of MCP Tool Create new Google Spreadsheet"/>
         <!-- HTTP call to the API -->
-        <http:request config-ref="JSONPlaceholder-Config" doc:name="GET users" method="GET" path="/users"></http:request>
     </flow>
     <!--
         TOOL 4: get-user-posts
