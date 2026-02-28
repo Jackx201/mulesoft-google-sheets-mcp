@@ -1,318 +1,173 @@
-# MCP Server MuleSoft — Template Project
+# Google Sheets MCP Server — MuleSoft
 
-This is a small MCP (Model Context Protocol) test server built with MuleSoft to demonstrate how to configure and implement MCP servers that can be consumed by AI clients such as Claude or GitHub Copilot.
+A **Model Context Protocol (MCP) Server** built with MuleSoft that exposes Google Sheets operations as MCP tools, allowing AI agents (Claude, Copilot, Cursor, etc.) to interact with Google Spreadsheets directly through natural language.
 
-## What is MCP?
+---
 
-MCP (Model Context Protocol) is a protocol that standardizes how AI applications interact with external data sources and tools. An MCP server exposes "tools" that AI models can discover and call.
+## What is this?
 
-## Server Architecture
+This project implements an MCP server using the [MuleSoft MCP Connector](https://anypoint.mulesoft.com/exchange/com.mulesoft.connectors/mule-mcp-connector/). It bridges AI agents with the Google Sheets API using OAuth 2.0, exposing spreadsheet operations as tools that any MCP-compatible client can discover and invoke.
+
+---
+
+## Architecture
 
 ```
-MCP Client (Agent / Inspector)
-    ↓ SSE (Server-Sent Events)
-MCP Server (MuleSoft - localhost:8080)
-    ↓ Tool Listeners (4 tools exposed)
-MuleSoft flows
-    ↓ HTTP Requests
-JSONPlaceholder API (https://jsonplaceholder.typicode.com)
+MCP Client (AI Agent)
+        │
+        ▼
+MuleSoft MCP Server (Streamable HTTP)
+        │
+        ▼
+Google Sheets API v4 (OAuth 2.0)
 ```
 
-## Available Tools
+- **MCP Transport:** Streamable HTTP on `http://localhost:8080/api`
+- **Auth:** Google OAuth 2.0 Authorization Code flow
+- **Token Storage:** Mule Object Store (persisted across requests)
+- **Config:** Secure Properties Module (AES/CBC encrypted credentials)
 
-This server exposes four tools that interact with the public JSONPlaceholder API:
+---
 
-### 1. get-all-posts
-- Description: Retrieves all blog posts
-- Parameters: None
-- Response: List of 100 posts (title, body, userId)
+## MCP Tools
 
-### 2. get-post-by-id
-- Description: Retrieves a single post by its ID
-- Parameters:
-   - `postId` (integer, 1-100): ID of the post to fetch
-- Response: Single post with full details
+### 1. `get-sheet-values-by-tab-name`
+Retrieves all values from a Google Spreadsheet given a tab name.
 
-### 3. get-users
-- Description: Retrieves the list of all users
-- Parameters: None
-- Response: List of users (name, email, city)
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `sheetId` | string | ✅ | Spreadsheet ID (found in the sheet URL) |
+| `tabName` | string | ✅ | Name of the tab to read from |
 
-### 4. get-user-posts
-- Description: Retrieves all posts for a specific user
-- Parameters:
-   - `userId` (integer): ID of the user
-- Response: List of posts for the specified user
+---
+
+### 2. `get-sheet-values-by-range`
+Retrieves values from a specific cell range in a Google Spreadsheet.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `sheetId` | string | ✅ | Spreadsheet ID (found in the sheet URL) |
+| `range` | string | ✅ | Cell range in A1 notation (e.g. `Sheet1!A1:D10`) |
+
+---
+
+### 3. `create-new-spreadsheet`
+Creates a new Google Spreadsheet with a given name and optional tab structure.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `title` | string | ✅ | Name of the new spreadsheet |
+| `sheets` | string[] | ❌ | Array of tab names to create. Defaults to `["Sheet1"]` |
+
+---
+
+### 4. `append-sheet-values`
+Appends new rows of data to a Google Spreadsheet at a given range.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `sheetId` | string | ✅ | Spreadsheet ID (found in the sheet URL) |
+| `range` | string | ✅ | Target range in A1 notation (e.g. `Sheet1!A:D`) |
+| `values` | array[] | ✅ | Array of arrays — each inner array is a row (e.g. `[["John", "Doe", "30"]]`) |
+
+---
+
+## HTTP Endpoints
+
+In addition to the MCP tools, the following REST endpoints are available for direct use or debugging:
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/get-sheet-values-by-range` | Read sheet values by range |
+| `GET` | `/api/get-sheet-values-by-tab` | Read all values from a tab |
+| `POST` | `/api/append-values` | Append rows to a sheet |
+| `POST` | `/api/create-new-spreadsheet` | Create a new spreadsheet |
+| `GET` | `/api/get-access-token` | Retrieve the current OAuth access token |
+| `GET` | `/api/health` | Health check |
+| `GET` | `/api/google/auth` | Initiate Google OAuth flow |
+
+---
 
 ## Prerequisites
 
-- Java 17
-- Maven 3.x
-- Mule Runtime 4.9.6 or newer
-- Anypoint Studio (optional for visual development)
+- **Anypoint Code Builder** or **Anypoint Studio**
+- **Mule Runtime** 4.11.0+
+- **JDK 17**
+- A **Google Cloud Project** with the Google Sheets API enabled
+- An **OAuth 2.0 Client ID** (type: Web Application) with the callback URL:
+  ```
+  http://localhost:8080/api/callback
+  ```
 
-## Setup & Run
+---
 
-### 1. Open the project
+## Configuration
 
-```bash
-cd mcp-server-mulesoft
+Credentials are stored encrypted in `src/main/resources/config/ws/ws-config.yaml` using the [Mule Secure Properties Module](https://docs.mulesoft.com/secure-configuration-properties/1.2/) (AES/CBC).
+
+```yaml
+google:
+  spread-sheets:
+    client_id: "![ENCRYPTED_VALUE]"
+    client_secret: "![ENCRYPTED_VALUE]"
+    scope: "https://www.googleapis.com/auth/spreadsheets"
+  oauth-callback:
+    callback_path: "/callback"
+    authorize-path: "/google/auth"
+    external-callback-url: "http://localhost:8080/callback"
 ```
 
-### 2. Start the server
+To encrypt your own values use the [Secure Properties Tool](https://docs.mulesoft.com/mule-runtime/4.4/secure-configuration-properties#secure_props_tool) with algorithm `AES` and mode `CBC`.
 
-Option A: Using Maven
+---
 
-```bash
-mvn clean install
-mvn mule:run
-```
+## Running the Server
 
-Option B: Using Anypoint Studio
-
-1. Import the project into Anypoint Studio
-2. Right-click the project → Run As → Mule Application
-3. Add this VM arg to the run configuration: `-M-Dmule.http.service.implementation=NETTY`
-
-### 3. Verify the server is running
+Pass your encryption key as a JVM argument:
 
 ```bash
-curl http://localhost:8080/api/sse
+-Dsecure.key=YOUR_ENCRYPTION_KEY
 ```
 
-This command should keep the connection open (press Ctrl+C to exit).
+In Anypoint Code Builder, add it to the run configuration under **Additional JVM args**.
 
-## Test with MCP Inspector
+Once started:
 
-MCP Inspector is a visual tool to debug and test MCP servers.
+1. **Authorize Google:** Open `http://localhost:8080/api/google/auth` in your browser and complete the OAuth flow.
+2. **Connect your MCP client** to `http://localhost:8080/api/sse` (or the streamable HTTP endpoint).
+3. The 4 tools will be available for any MCP-compatible AI agent.
 
-```bash
-npx @modelcontextprotocol/inspector http://localhost:8080/sse
-```
+---
 
-The inspector will open a browser UI where you can:
-- View the four available tools
-- Try each tool with interactive inputs
-- Inspect JSON-RPC messages in real time
-- Debug errors and responses
-
-If the inspector port is in use:
-
-```bash
-# Kill the previous process (UNIX example)
-kill $(lsof -ti:6274)
-
-# Or use a different port
-PORT=6275 npx @modelcontextprotocol/inspector http://localhost:8080/sse
-```
-
-## Test with cURL (manual MCP session)
-
-You can also test the server manually with cURL using an SSE session.
-
-```bash
-# 1. Create an SSE session
-curl http://localhost:8080/api/sse
-
-# This call returns a SESSION_ID — use it for subsequent requests
-
-# 2. Initialize the MCP session
-curl -X POST "http://localhost:8080/message?sessionId=${SESSION_ID}" \
- -H "Content-Type: application/json" \
- -d '{
-    "jsonrpc": "2.0",
-    "method": "initialize",
-    "params": {
-       "protocolVersion": "2024-11-05",
-       "capabilities": {},
-       "clientInfo": {"name": "test", "version": "1.0.0"}
-    },
-    "id": 1
- }'
-
-# 2.1 Notify that the MCP session is initialized
-curl -X POST "http://localhost:8080/message?sessionId=${SESSION_ID}" \
- -H "Content-Type: application/json" \
- -d '{
-    "jsonrpc": "2.0",
-    "method": "notifications/initialized",
-    "id": 1
- }'
-
-# 3. Call a tool (example: get-users)
-curl -X POST "http://localhost:8080/message?sessionId=${SESSION_ID}" \
- -H "Content-Type: application/json" \
- -d '{
-    "jsonrpc": "2.0",
-    "method": "tools/call",
-    "params": {
-       "name": "get-users",
-       "arguments": {}
-    },
-    "id": 2
- }'
-```
-
-## Integrate with your Copilot Agent
-
-To use this server from Copilot:
-
-1. Add a server configuration in `.vscode/mcp.json`:
+## MCP Client Configuration (Claude Desktop / Cursor)
 
 ```json
 {
-   "servers": {
-      "My-MCP-Server": {
-         "url": "http://localhost:8080/mcp",
-         "type": "http"
-      }
-   },
-   "inputs": []
+  "mcpServers": {
+    "google-sheets": {
+      "url": "http://localhost:8080/api/sse"
+    }
+  }
 }
 ```
 
-2. Ensure your chatbot has MCP servers enabled in its settings.
-3. Open the tools pane in your chatbot — you should see the four tools available.
-
-## Key Concepts
-
-### 1. MCP Server Configuration
-
-```xml
-<mcp:server-config name="Server" serverName="mule-mcp-server" serverVersion="1.0.0">
-    <mcp:streamable-http-server-connection listenerConfig="HTTP-Listener-config"/>
-</mcp:server-config>
-```
-
-### 2. Defining a Tool
-
-```xml
-<mcp:tool-listener name="tool-name" config-ref="Server">
-    <mcp:description>Tool description</mcp:description>
-    <mcp:parameters-schema><![CDATA[{
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "type": "object",
-          "properties": {
-                "param1": {
-                      "type": "string",
-                      "description": "Parameter description"
-                }
-          },
-          "required": ["param1"]
-    }]]></mcp:parameters-schema>
-    <mcp:responses>
-          <mcp:text-tool-response-content text="#[payload.^raw]" />
-    </mcp:responses>
-</mcp:tool-listener>
-```
-
-### 3. Accessing Parameters
-
-Parameters sent by the MCP client are available on the `payload`:
-
-```xml
-<set-variable variableName="userId" value="#[payload.userId]" />
-```
-
-### 4. Response Format
-
-Make sure each tool includes a `<mcp:responses>` block with `<mcp:text-tool-response-content>`:
-
-```xml
-<mcp:responses>
-    <mcp:text-tool-response-content text="#[payload.^raw]" />
-</mcp:responses>
-```
-
-### 5. MCP SSE Communication Flow
-
-1. Client connects via SSE: `GET /api/sse`
-2. Handshake: `initialize` request
-3. Discovery: `tools/list` request
-4. Execution: `tools/call` with parameters
-5. Response: Server returns the result in MCP format
+---
 
 ## Project Structure
 
 ```
-mcp-server-mulesoft/
-├── pom.xml                       # Maven configuration
-├── mule-artifact.json            # Mule application metadata
-├── src/
-│   └── main/
-│       ├── mule/
-│       │   └── mcp-server-mulesoft.xml   # Flows & tool definitions
-│       └── resources/
-│           └── log4j2.xml        # Logging configuration
-└── README.md                     # This file
+src/main/mule/
+├── global.xml                    # Global configs: Secure Properties, Google Sheets connector, Object Store
+├── gogle-sheets-mcp-server.xml   # MCP tool listeners
+└── implementation.xml            # Flow implementations
+
+src/main/resources/
+├── config/ws/ws-config.yaml      # Encrypted credentials
+└── dataweave/                    # DataWeave scripts
 ```
 
-## Troubleshooting
-
-### Empty responses ("content: []")
-
-Cause: `<mcp:responses>` is not configured correctly.
-
-Fix: Ensure every tool includes:
-
-```xml
-<mcp:responses>
-    <mcp:text-tool-response-content text="#[payload.^raw]" />
-</mcp:responses>
-```
-
-### SSL/TLS errors when calling external APIs
-
-Cause: The JVM does not trust the external API certificate.
-
-Fix (development only):
-
-```xml
-<tls:context>
-    <tls:trust-store insecure="true"/>
-</tls:context>
-```
-
-Note: In production add the certificates to the Java truststore.
-
-### "Invalid input" in inputSchema
-
-Cause: Missing `$schema` field in the JSON Schema.
-
-Fix: Include the `$schema` declaration:
-
-```json
-{
-   "$schema": "http://json-schema.org/draft-07/schema#",
-   "type": "object",
-   ...
-}
-```
-
-### Inspector port 6274 already in use
-
-Cause: Another instance of the Inspector is running.
-
-Fix:
-
-- Stop the running process with Ctrl+C in its terminal, or
-- Kill the process manually and restart the Inspector:
-
-```bash
-kill $(lsof -ti:6274)
-# Or run Inspector on another port
-PORT=6275 npx @modelcontextprotocol/inspector http://localhost:8080/api/sse
-```
-
-## Additional Resources
-
-- [MCP Specification](https://spec.modelcontextprotocol.io/)
-- [MuleSoft MCP Connector Documentation](https://docs.mulesoft.com/)
-- [JSONPlaceholder API](https://jsonplaceholder.typicode.com/)
-- [MCP Inspector](https://github.com/modelcontextprotocol/inspector)
+---
 
 ## License
 
-This is an educational open-source project. Feel free to use, modify, and distribute.
-
-```
+MIT
