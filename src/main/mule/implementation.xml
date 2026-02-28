@@ -2,8 +2,8 @@
     <flow name="get-sheet-values-by-range">
         <http:listener config-ref="HTTP-Listener-config" doc:id="crbcqz" doc:name="Listener" path="/get-sheet-values-by-range"></http:listener>
         <logger doc:id="zgirjb" doc:name="Start Get Sheets Values Flow" message="Invoking Get Sheet Range Values Flow"></logger>
-        <set-variable doc:id="kmtgmf" doc:name="Set Sheet Id Variable" value="#[attributes.queryParams['sheetId']]" variableName="vSheetId"></set-variable>
-        <set-variable doc:id="vsxmuo" doc:name="Set Sheet Range variable" value="#[attributes.queryParams['range']]" variableName="vSheetRange"></set-variable>
+        <set-variable doc:id="kmtgmf" doc:name="Set Sheet Id Variable" value="#[payload.sheetId]" variableName="vSheetId"></set-variable>
+        <set-variable doc:id="vsxmuo" doc:name="Set Sheet Range variable" value="#[payload.range]" variableName="vSheetRange"></set-variable>
         <google-sheets:get-spreadsheets-values-by-spreadsheet-id-range config-ref="Google-Sheet-Mule-Connector-Config" doc:id="jvzdls" doc:name="Get Spreadsheets Values" range="#[vars.vSheetRange]" spreadsheetId="#[vars.vSheetId]"></google-sheets:get-spreadsheets-values-by-spreadsheet-id-range>
         <logger doc:id="ffloio" doc:name="Exit Get Sheet Logger" message="Exiting Get Sheet Range Values Logger"></logger>
     </flow>
@@ -50,7 +50,9 @@
     <flow name="get-sheet-values-by-tab">
         <http:listener doc:name="Listener" doc:id="neqpio" path="get-sheet-values-by-tab" config-ref="HTTP-Listener-config"/>
         <logger doc:name="Start Get Sheet Values by Tab Flow Logger" doc:id="upqcsf" message="Get Sheet Values by Tab Flow Started"/>
-        <set-variable doc:name="Set Tab Name variable" doc:id="gxtidx" variableName="vTabName" value="#[payload.TabName]"/>
-        <flow-ref doc:name="Get Access Token Flow Reference" name="get-access-token" target="vAccessToken"/>
+        <set-variable doc:name="Set variable" doc:id="wcgiyj" variableName="vSheetId" value="#[payload.sheetId]"/>
+        <set-variable doc:name="Set Tab Name variable" doc:id="gxtidx" variableName="vTabName" value="#[payload.tabName]"/>
+        <flow-ref doc:name="Get Access Token Flow Reference" name="get-access-token" target="vAccessToken" targetValue="#[payload.access_token]"/>
+        <http:request doc:name="Request" doc:id="yrilax" config-ref="Google-Sheet-Request-API" url='#["https://sheets.googleapis.com/v4/spreadsheets/" ++ vars.vSheetId ++ "/values/" ++ vars.vTabName ++ "?access_token=" ++ vars.vAccessToken]'/>
     <logger doc:name="Finish Get Sheet Values by Tab Flow Logger" doc:id="nlcltr" message="Get Sheet Values by Tab Flow Finished"/></flow>
 </mule>

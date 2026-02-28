@@ -43,21 +43,25 @@
         TOOL 2: get-post-by-id
         Retrieves a single post by its ID
     -->
-    <flow name="get-post-by-id-flow">
-        <mcp:tool-listener config-ref="Server" doc:name="get-post-by-id" name="get-post-by-id">
-            <mcp:description><![CDATA[Retrieves a single post by its ID. Requires parameter 'postId' (integer 1-100).]]></mcp:description>
+    <flow name="get-sheet-values-by-range-flow">
+        <mcp:tool-listener config-ref="Server" doc:name="get-sheet-values-by-range" name="get-sheet-values-by-range">
+            <mcp:description><![CDATA[Retrieves a Google sheet values within a given range for limiting to only certain information.]]></mcp:description>
             <mcp:parameters-schema><![CDATA[{
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
-        "postId": {
-            "type": "integer",
-            "description": "ID to be retrieved (1-100)",
-            "minimum": 1,
-            "maximum": 100
+        "sheetId": {
+            "type": "string",
+            "description": "ID of the sheet to be retrieved. Can be found in sheet URL"
+        },
+
+        "range": {
+            "type": "string",
+            "description": "Range of cells to be selected and retrieved."
         }
+
     },
-    "required": ["postId"]
+    "required": ["sheetId", "range"]
 }]]></mcp:parameters-schema>
             <mcp:responses>
                 <mcp:text-tool-response-content text="#[payload.^raw]" priority="1" >
@@ -67,10 +71,11 @@
                 </mcp:text-tool-response-content>
             </mcp:responses>
         </mcp:tool-listener>
+    <logger doc:name="Enter MCP Tool Logger" doc:id="ogopsq" message="Entered MCP Tool Get Google Sheet Value By Range"/>
         <!-- Extract postId from payload -->
-        <set-variable doc:name="Set postId variable" value="#[payload.postId]" variableName="postId"></set-variable>
+        <flow-ref doc:name="Get Sheet Values by Range Flow-ref" name="get-sheet-values-by-range"/>
+        <logger doc:name="Exit MCP Tool Logger" doc:id="yagjds" message="Exit MCP Tool Get Google Sheet Value By Range"/>
         <!-- HTTP call using the post ID -->
-        <http:request config-ref="JSONPlaceholder-Config" doc:name="GET post by ID" method="GET" path="#['/posts/' ++ vars.postId]"></http:request>
         <!-- Response transformation -->
     </flow>
     <!--

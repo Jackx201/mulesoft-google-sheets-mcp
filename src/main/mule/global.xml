@@ -24,6 +24,6 @@
 
     <!-- HTTP Request configuration for Google Sheets API -->
     <http:request-config name="Google-Sheet-Request-API">
-        <http:request-connection host="sheets.googleapis.com/v4/spreadsheets/" port="0" protocol="HTTPS"></http:request-connection>
+        <http:request-connection host="sheets.googleapis.com/v4/spreadsheets/" protocol="HTTPS"></http:request-connection>
     </http:request-config>
 </mule>
