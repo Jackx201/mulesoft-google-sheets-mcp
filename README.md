@@ -171,3 +171,10 @@ src/main/resources/
 ## License
 
 MIT
+
+
+# Demo
+
+[![Watch Demo](https://img.youtube.com/vi/UoRqlrgSvqg/maxresdefault.jpg)](https://youtu.be/UoRqlrgSvqg?si=VUs6tJ1UAWOaNBRn)
+
+Watch the demo of an AI agent consuming this MCP server to interact with Google Sheets using natural language — reading, creating, and appending data in real time.
